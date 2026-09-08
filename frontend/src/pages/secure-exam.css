@@ -1,0 +1,21 @@
+.secure-exam-room { background: #0b0c18; font-family: "Inter", "Segoe UI Variable", "Segoe UI", sans-serif; }.secure-exam-room > header { border-color: #2b2e52 !important; background: #0e0f1e !important; box-shadow: inset 0 -1px 0 rgba(129,140,248,.08); }.secure-exam-room > main { width: min(100%, 1440px) !important; padding: 28px !important; }.secure-exam-room .bg-slate-900 { background-color: #171933 !important; }.secure-exam-room .bg-slate-950 { background-color: #0e0f1e !important; }.secure-exam-room .border-slate-700, .secure-exam-room .border-slate-800 { border-color: #2b2e52 !important; }.secure-exam-room .bg-blue-600 { background-color: #4f46e5 !important; }.secure-exam-room .hover\:bg-blue-700:hover { background-color: #4338ca !important; }.secure-exam-room .text-blue-400, .secure-exam-room .text-blue-300 { color: #a5b4fc !important; }.secure-exam-room .text-emerald-400 { color: #34d399 !important; }.secure-exam-room .bg-emerald-500\/10 { background-color: rgba(52,211,153,.1) !important; }
+.secure-exam-room .bg-blue-600\/20 { background-color: rgba(79,70,229,.18) !important; }
+.secure-exam-room .text-blue-500 { color: #818cf8 !important; }
+.secure-exam-room .bg-slate-800 { background-color: #1e2044 !important; }
+.secure-exam-room .hover\:bg-slate-700:hover { background-color: #282b57 !important; }
+.secure-exam-room .focus\:ring-blue-500:focus { --tw-ring-color: #4f46e5 !important; }
+.secure-exam-room .focus\:border-blue-500:focus { border-color: #4f46e5 !important; }
+.secure-exam-room .border-amber-500\/20 { border-color: rgba(251,191,36,.22) !important; }
+.secure-exam-room .bg-amber-500\/5 { background-color: rgba(251,191,36,.05) !important; }
+.secure-exam-room .text-amber-400 { color: #fbbf24 !important; }
+.secure-exam-room span.bg-amber-400 { background-color: #fbbf24 !important; }
+.secure-exam-room span.bg-emerald-400 { background-color: #34d399 !important; }
+.secure-exam-room span.bg-rose-400 { background-color: #fb7185 !important; }
+.secure-exam-room .border-rose-500\/30 { border-color: rgba(251,113,133,.32) !important; }
+.secure-exam-room .bg-rose-500\/10 { background-color: rgba(251,113,133,.1) !important; }
+.secure-exam-room .text-rose-100 { color: #ffe4e9 !important; }
+.secure-exam-room .text-rose-200 { color: #ffc9d4 !important; }
+.secure-exam-room .text-rose-300, .secure-exam-room .text-rose-500 { color: #fb7185 !important; }.secure-exam-room :is(textarea, input, select) { font-size: 14px; }.secure-exam-room pre, .secure-exam-room code { font-family: "Cascadia Code", "Cascadia Mono", Consolas, monospace; }
+@media (max-width: 680px) { .secure-exam-room > main { padding: 14px !important; } }
+
+
