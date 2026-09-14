@@ -106,8 +106,8 @@ function ResultPending({ sessionData }) {
   const voided = sessionData.is_ufm;
 
   return (
-    <div className="max-w-2xl mx-auto py-16 px-4 text-center">
-      <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-xl">
+    <div className="app-page workflow-page result-review-page max-w-2xl mx-auto py-12 text-center">
+      <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-xl">
         <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${voided ? 'bg-rose-100' : 'bg-emerald-100'}`}>
           {voided ? <Lock className="h-8 w-8 text-rose-600" /> : <CheckCircle2 className="h-8 w-8 text-emerald-600" />}
         </div>
@@ -186,11 +186,13 @@ export default function ExamResult() {
 
   if (!sessionData) {
     return (
-      <div className="max-w-4xl mx-auto py-12 px-4 text-center">
-        <div className="bg-white p-8 rounded-2xl shadow border border-slate-200">
+      <div className="app-page workflow-page result-review-page max-w-2xl mx-auto py-12 text-center">
+        <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-xl">
           <h2 className="text-xl font-bold text-slate-800">Result Not Available</h2>
-          <p className="text-slate-600 mt-2">Could not load evaluation results. You may not have completed this examination yet.</p>
-          <Link to="/" className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded-xl">Back to Dashboard</Link>
+          <p className="mt-2 text-sm text-slate-600">Could not load evaluation results. You may not have completed this examination yet.</p>
+          <Link to="/" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700">
+            <Home className="h-4 w-4" /> Back to Dashboard
+          </Link>
         </div>
       </div>
     );

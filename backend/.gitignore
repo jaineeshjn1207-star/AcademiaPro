@@ -11,15 +11,20 @@ env/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # Database
+*.sqlite3
+*.sqlite3-journal
 db.sqlite3
 
 # Static & Media
 staticfiles/
 media/
 
-# Logs
+# Generated PDFs & Logs
+*.pdf
 *.log
 
 # VS Code

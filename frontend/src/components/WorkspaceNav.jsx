@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3, BookOpen, Bot, ChevronDown, ClipboardList, FileText, GraduationCap,
@@ -48,6 +48,7 @@ export default function WorkspaceNav() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuRef = useRef(null);
   const isAdmin = user?.user_type === 'admin';
   const isFaculty = user?.user_type === 'faculty';
   const primaryLinks = isAdmin ? adminPrimaryLinks : (isFaculty ? facultyPrimaryLinks : studentPrimaryLinks);
@@ -58,6 +59,24 @@ export default function WorkspaceNav() {
     setMobileOpen(false);
     setMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   const signOut = () => {
     logout();
@@ -91,7 +110,7 @@ export default function WorkspaceNav() {
           <button type="button" className="workspace-icon-button" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} title="Toggle colour mode">
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <div className="workspace-account">
+          <div className="workspace-account" ref={menuRef}>
             <button type="button" className="workspace-account-trigger" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-haspopup="menu">
               <Initials name={user?.name} />
               <span className="workspace-account-name"><strong>{user?.name}</strong><small>{isAdmin ? 'Admin' : isFaculty ? 'Faculty' : user?.enrollment_no || 'Student'}</small></span>

@@ -130,19 +130,28 @@ export default function StudentAnalysis() {
   };
 
   if (loading) {
-    return <div className="flex min-h-[70vh] items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-indigo-600" /></div>;
+    return (
+      <div className="app-page workflow-page flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+          <p className="text-sm font-semibold text-slate-500">Loading student analysis…</p>
+        </div>
+      </div>
+    );
   }
 
   if (error || !data) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-16">
-        <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 text-center">
-          <AlertCircle className="mx-auto mb-3 h-12 w-12 text-rose-500" />
-          <p className="text-sm text-rose-700">{error}</p>
-          {notStarted && <p className="mt-1 text-xs text-rose-500">There is nothing to analyze until they begin the exam.</p>}
-          <Link to={`/faculty/exam/${examId}/live-status`} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-6 py-2.5 text-sm font-bold text-white">
-            <ArrowLeft className="h-4 w-4" /> Back to Live Status
-          </Link>
+      <div className="app-page workflow-page">
+        <div className="mx-auto max-w-xl py-12 text-center">
+          <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 shadow-sm">
+            <AlertCircle className="mx-auto mb-3 h-12 w-12 text-rose-500" />
+            <p className="text-sm font-bold text-rose-700">{error}</p>
+            {notStarted && <p className="mt-1 text-xs text-rose-500">There is nothing to analyze until they begin the exam.</p>}
+            <Link to={`/faculty/exam/${examId}/live-status`} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700">
+              <ArrowLeft className="h-4 w-4" /> Back to Live Status
+            </Link>
+          </div>
         </div>
       </div>
     );

@@ -1,0 +1,79 @@
+services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: academiapro_db
+    environment:
+      POSTGRES_DB: academiapro_db
+      POSTGRES_USER: academiapro_user
+      POSTGRES_PASSWORD: academiapro_secure_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U academiapro_user -d academiapro_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # Django REST Backend API
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: academiapro_backend
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn exam_portal.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 120"
+    environment:
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:-insecure-docker-compose-dev-key-must-change-in-prod}"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend,web,frontend"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:5173,http://localhost:80,http://localhost"
+      CORS_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:80,http://localhost"
+      FRONTEND_URL: "${FRONTEND_URL:-http://localhost}"
+      DATABASE_URL: "postgresql://academiapro_user:academiapro_secure_password@db:5432/academiapro_db"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.0-flash}"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/healthz/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # React Frontend (Nginx)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "/api/"
+        VITE_SHOW_DEMO_CREDENTIALS: "true"
+    container_name: academiapro_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:

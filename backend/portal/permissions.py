@@ -18,13 +18,13 @@ class IsStudent(permissions.BasePermission):
     at login — this is what makes the lock take effect immediately even on
     an already-issued access token.
     """
-    message = BLOCKED_MESSAGE
-
     def has_permission(self, request, view):
         user = request.user
         if not (user and user.is_authenticated and user.user_type == 'student'):
+            self.message = "You do not have permission to perform this action."
             return False
         if user.is_blocked:
+            self.message = BLOCKED_MESSAGE
             return False
         return True
 

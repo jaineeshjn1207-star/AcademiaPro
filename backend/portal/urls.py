@@ -19,6 +19,8 @@ from .views import (
     ResultPdfView,
     CloneExamView, BulkRosterImportView, ExamAppealView, AppealsInboxView,
     PracticeQuestionsView, PracticeSubmitView, ExamCalendarView, BulkMCQImportView,
+    QuestionBankView, QuestionBankPdfImportView, ReferenceSolutionView,
+    CodeSimilarityView,
 )
 
 router = DefaultRouter()
@@ -92,6 +94,16 @@ urlpatterns = [
     path('exams/<int:exam_id>/students/<int:student_id>/marks/', UpdateStudentMarksView.as_view(), name='update-marks'),
     path('exams/<int:exam_id>/students/<int:student_id>/verify/', VerifyStudentSessionView.as_view(), name='verify-session'),
     path('coding-submissions/<int:submission_id>/evaluate/', EvaluateCodingSubmissionView.as_view(), name='evaluate-coding'),
+
+    # ---------- Code Similarity & Academic Integrity ----------
+    path('exams/<int:exam_id>/coding-problems/<int:problem_id>/similarity/', CodeSimilarityView.as_view(), name='code-similarity'),
+
+    # ---------- Question Bank & Reference Solutions ----------
+    path('question-bank/', QuestionBankView.as_view(), name='question-bank'),
+    path('question-bank/import-pdf/', QuestionBankPdfImportView.as_view(), name='question-bank-import-pdf'),
+    path('question-bank/<int:item_id>/', QuestionBankView.as_view(), name='question-bank-detail'),
+    path('coding-problems/<int:problem_id>/solutions/', ReferenceSolutionView.as_view(), name='coding-problem-solutions'),
+    path('coding-problems/<int:problem_id>/solutions/<int:solution_id>/', ReferenceSolutionView.as_view(), name='coding-problem-solution-detail'),
 
     # ---------- Unfair-means account locks ----------
     path('students/blocked/', BlockedStudentsView.as_view(), name='blocked-students'),

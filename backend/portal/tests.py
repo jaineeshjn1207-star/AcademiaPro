@@ -9,13 +9,16 @@ from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
+from unittest.mock import patch
+
 from .models import (
     User, Exam, StudentExamAccess, MCQQuestion, CodingProblem,
     ReferenceSolution, CodingTestCase, StudentExamSession, MCQResponse, CodingSubmission,
-    FacultyNote, StudentNote, ProctorEvent, Notification,
+    FacultyNote, StudentNote, ProctorEvent, Notification, PracticeQuestion,
 )
 from .ai_code_evaluator import evaluate_code_ai_first
 from .gemini_code_evaluator import _build_prompt
+from .views import evaluate_coding_submissions_in_background
 
 
 class BaseSetup(TestCase):
@@ -143,6 +146,11 @@ class BranchScopedAccessTests(BaseSetup):
         self.exam.created_by = same_branch_faculty
         self.exam.target_branch = 'CE'
         self.exam.save(update_fields=['created_by', 'target_branch'])
+        StudentExamSession.objects.create(
+            exam=self.exam, student=self.student, status='evaluated',
+            mcq_score=10, coding_score=0, total_score=10,
+        )
+        self.close_exam_window()
 
         self.client.force_authenticate(self.student)
         res = self.client.post(f'/api/exams/{self.exam.id}/appeals/', {'reason': 'Please review this result.'}, format='json')
@@ -431,7 +439,8 @@ class ExamFlowTests(BaseSetup):
         res = self.client.post(f'/api/exams/{self.exam.id}/submit/', {}, format='json')
         self.assertEqual(res.data['session']['mcq_score'], real.marks)
 
-    def test_gemini_unavailable_submission_is_pending_even_if_old_tests_exist(self):
+    @patch('portal.ai_code_evaluator.evaluate_with_gemini', return_value=None)
+    def test_gemini_unavailable_submission_is_pending_even_if_old_tests_exist(self, mock_gemini):
         """Retired hidden/visible test-case rows do not grade anymore;
         without Gemini the submission is pending faculty review.
         """
@@ -449,6 +458,8 @@ class ExamFlowTests(BaseSetup):
             'coding_answers': {str(self.problem.id): {'code': wrong_code, 'language': 'python'}},
         }, format='json')
         self.assertEqual(res.status_code, 200, res.data)
+        session = StudentExamSession.objects.get(exam=self.exam, student=self.student)
+        evaluate_coding_submissions_in_background(session.id)
         sub = CodingSubmission.objects.get(problem=self.problem, session__student=self.student)
         self.assertEqual(sub.marks_awarded, 0.0)
         self.assertEqual(sub.logic_status, 'pending')
@@ -458,7 +469,8 @@ class ExamFlowTests(BaseSetup):
         self.assertEqual(sub.hidden_failed_count, 0)
         self.assertTrue(sub.ai_mistake_explanation)
 
-    def test_old_test_case_rows_do_not_create_local_fallback_grade(self):
+    @patch('portal.ai_code_evaluator.evaluate_with_gemini', return_value=None)
+    def test_old_test_case_rows_do_not_create_local_fallback_grade(self, mock_gemini):
         """Old test-case rows may exist in upgraded databases, but grading
         remains Gemini-only; if Gemini is unavailable the result is pending.
         """
@@ -496,6 +508,8 @@ class ExamFlowTests(BaseSetup):
             'coding_answers': {str(problem.id): {'code': code, 'language': 'python'}},
         }, format='json')
         self.assertEqual(res.status_code, 200, res.data)
+        session = StudentExamSession.objects.get(exam=exam, student=self.student)
+        evaluate_coding_submissions_in_background(session.id)
         sub = CodingSubmission.objects.get(problem=problem, session__student=self.student)
         self.assertEqual(sub.marks_awarded, 0.0)
         self.assertEqual(sub.logic_status, 'pending')
@@ -713,7 +727,8 @@ class GeminiOnlyEvaluatorTests(BaseSetup):
         self.assertEqual(r['marks_awarded'], 0.0)
         self.assertEqual(r['source'], 'gemini-unavailable')
 
-    def test_gemini_unavailable_is_pending_for_faculty_review(self):
+    @patch('portal.ai_code_evaluator.evaluate_with_gemini', return_value=None)
+    def test_gemini_unavailable_is_pending_for_faculty_review(self, mock_gemini):
         problem = CodingProblem.objects.create(
             exam=self.exam,
             title='Pandas functions',
@@ -758,6 +773,8 @@ class ReferenceUnlockTests(BaseSetup):
             'mcq_answers': {},
             'coding_answers': {str(self.problem.id): {'code': code, 'language': 'python'}},
         }, format='json')
+        session = StudentExamSession.objects.get(exam=self.exam, student=self.student)
+        evaluate_coding_submissions_in_background(session.id)
         if finish_exam:
             self.close_exam_window()
         return self.client.get(f'/api/exams/{self.exam.id}/result/').data
@@ -783,7 +800,8 @@ class ReferenceUnlockTests(BaseSetup):
         self.assertGreater(len(sub['reference_solutions']), 0)
         self.assertIn('logic_explanation', sub['reference_solutions'][0])
 
-    def test_model_unavailable_marks_for_review_and_unlocks_references_after_exam_ends(self):
+    @patch('portal.ai_code_evaluator.evaluate_with_gemini', return_value=None)
+    def test_model_unavailable_marks_for_review_and_unlocks_references_after_exam_ends(self, mock_gemini):
         data = self._submit('def two_sum(nums, target):\n    return []\n')
         sub = data['coding_submissions'][0]
         self.assertEqual(sub['logic_status'], 'pending')
@@ -1780,7 +1798,7 @@ class ProductOperationsTests(BaseSetup):
         self.assertEqual(create.status_code, 201, create.data)
         from .models import Notification
         to_faculty = Notification.objects.filter(recipient=self.faculty, notification_type='appeal').latest('created_at')
-        self.assertEqual(to_faculty.link, f'/faculty/exam/{self.exam.id}/manage')
+        self.assertEqual(to_faculty.link, '/appeals')
 
         appeal_id = create.data['id']
         self.login_faculty()
@@ -1788,7 +1806,7 @@ class ProductOperationsTests(BaseSetup):
                                      {'status': 'resolved', 'faculty_response': 'Reviewed, marks unchanged.'}, format='json')
         self.assertEqual(resolve.status_code, 200, resolve.data)
         to_student = Notification.objects.filter(recipient=self.student, notification_type='appeal').latest('created_at')
-        self.assertEqual(to_student.link, f'/exam/{self.exam.id}/result')
+        self.assertEqual(to_student.link, '/appeals')
 
     # -- audit log -----------------------------------------------------
     def test_audit_log_is_admin_only_and_paginated(self):
@@ -2011,6 +2029,206 @@ class ProductOperationsTests(BaseSetup):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res['Content-Type'], 'application/pdf')
 
+    def _get_pdf_reader(self, res):
+        import io
+        import pypdf
+        content = b''.join(res.streaming_content) if hasattr(res, 'streaming_content') else res.content
+        return pypdf.PdfReader(io.BytesIO(content))
+
+    def test_result_pdf_contains_searchable_vector_text(self):
+        """Verifies that generated PDF produces selectable, searchable vector text."""
+        self._seed_released_session(total_score=85)
+        self.login_student()
+        res = self.client.get(f'/api/exams/{self.exam.id}/result-card.pdf')
+        self.assertEqual(res.status_code, 200)
+
+        reader = self._get_pdf_reader(res)
+        self.assertGreaterEqual(len(reader.pages), 1)
+        text = reader.pages[0].extract_text()
+        self.assertIn('ACADEMIAPRO', text)
+        self.assertIn('EXAMINATION', text)
+        self.assertIn('MARKSHEET', text)
+        self.assertIn(self.student.name, text)
+        self.assertIn('PASS', text)
+        self.assertIn('85.00%', text)
+
+    def test_result_pdf_mixed_mcq_and_coding(self):
+        """Verifies that an exam with both MCQ and Coding problems generates both component rows."""
+        MCQQuestion.objects.create(exam=self.exam, question_text='MCQ Q1', option_a='A', option_b='B', option_c='C', option_d='D', correct_option='A', marks=20.0)
+        CodingProblem.objects.create(exam=self.exam, title='Coding P1', marks=30.0, language='python')
+        self._seed_released_session(total_score=80)
+        self.login_student()
+        res = self.client.get(f'/api/exams/{self.exam.id}/result-card.pdf')
+        self.assertEqual(res.status_code, 200)
+
+        reader = self._get_pdf_reader(res)
+        text = reader.pages[0].extract_text()
+        self.assertIn('Multiple Choice Questions (MCQ)', text)
+        self.assertIn('Programming & Algorithms (Coding)', text)
+        self.assertIn('Total Aggregate Performance', text)
+
+    def test_result_pdf_mcq_only(self):
+        """Verifies that an MCQ-only exam generates cleanly without Coding rows."""
+        mcq_exam = Exam.objects.create(
+            title='MCQ Assessment Only', created_by=self.faculty,
+            start_time=timezone.now() - timezone.timedelta(hours=2),
+            end_time=timezone.now() - timezone.timedelta(hours=1),
+            duration_minutes=60, passing_marks=20.0, total_marks=50.0,
+            results_published=True, results_published_at=timezone.now()
+        )
+        MCQQuestion.objects.create(exam=mcq_exam, question_text='Q1', option_a='A', option_b='B', option_c='C', option_d='D', correct_option='A', marks=50.0)
+        session = StudentExamSession.objects.create(
+            exam=mcq_exam, student=self.student, status='evaluated',
+            mcq_score=45.0, coding_score=0.0, total_score=45.0, is_passed=True,
+            submitted_at=timezone.now(), faculty_verified=True, faculty_verified_at=timezone.now()
+        )
+        self.login_student()
+        res = self.client.get(f'/api/exams/{mcq_exam.id}/result-card.pdf')
+        self.assertEqual(res.status_code, 200)
+
+        reader = self._get_pdf_reader(res)
+        text = reader.pages[0].extract_text()
+        self.assertIn('Multiple Choice Questions (MCQ)', text)
+        self.assertNotIn('Programming & Algorithms (Coding)', text)
+        self.assertIn('Total Aggregate Performance', text)
+
+    def test_result_pdf_coding_only(self):
+        """Verifies that a Coding-only exam generates cleanly without MCQ rows."""
+        code_exam = Exam.objects.create(
+            title='Coding Practical Only', created_by=self.faculty,
+            start_time=timezone.now() - timezone.timedelta(hours=2),
+            end_time=timezone.now() - timezone.timedelta(hours=1),
+            duration_minutes=60, passing_marks=30.0, total_marks=60.0,
+            results_published=True, results_published_at=timezone.now()
+        )
+        CodingProblem.objects.create(exam=code_exam, title='P1', marks=60.0, language='python')
+        session = StudentExamSession.objects.create(
+            exam=code_exam, student=self.student, status='evaluated',
+            mcq_score=0.0, coding_score=48.0, total_score=48.0, is_passed=True,
+            submitted_at=timezone.now(), faculty_verified=True, faculty_verified_at=timezone.now()
+        )
+        self.login_student()
+        res = self.client.get(f'/api/exams/{code_exam.id}/result-card.pdf')
+        self.assertEqual(res.status_code, 200)
+
+        reader = self._get_pdf_reader(res)
+        text = reader.pages[0].extract_text()
+        self.assertNotIn('Multiple Choice Questions (MCQ)', text)
+        self.assertIn('Programming & Algorithms (Coding)', text)
+        self.assertIn('Total Aggregate Performance', text)
+
+    def test_result_pdf_fail_status(self):
+        """Verifies that a failed session reflects FAIL status and correct marks."""
+        session = StudentExamSession.objects.create(
+            exam=self.exam, student=self.student, status='evaluated',
+            mcq_score=10.0, coding_score=10.0, total_score=20.0, is_passed=False,
+            submitted_at=timezone.now(), faculty_verified=True, faculty_verified_at=timezone.now()
+        )
+        self.close_exam_window()
+        self.login_student()
+        res = self.client.get(f'/api/exams/{self.exam.id}/result-card.pdf')
+        self.assertEqual(res.status_code, 200)
+
+        reader = self._get_pdf_reader(res)
+        text = reader.pages[0].extract_text()
+        self.assertIn('FAIL', text)
+        self.assertIn('Not Qualified', text)
+        self.assertIn('20.00%', text)
+
+    def test_result_pdf_ufm_voided_status(self):
+        """Verifies that a voided UFM session displays UNFAIR MEANS and zeroed score."""
+        session = StudentExamSession.objects.create(
+            exam=self.exam, student=self.student, status='ufm', is_ufm=True,
+            ufm_reason='Proctoring violation limits exceeded',
+            mcq_score=0.0, coding_score=0.0, total_score=0.0, is_passed=False,
+            submitted_at=timezone.now()
+        )
+        self.close_exam_window()
+        self.login_student()
+        res = self.client.get(f'/api/exams/{self.exam.id}/result-card.pdf')
+        self.assertEqual(res.status_code, 200)
+
+        reader = self._get_pdf_reader(res)
+        text = reader.pages[0].extract_text()
+        self.assertIn('UNFAIR MEANS', text)
+        self.assertIn('Attempt Voided', text)
+        self.assertIn('0.00%', text)
+
+    def test_result_pdf_long_names_and_titles(self):
+        """Verifies that extremely long student names and exam titles render cleanly without errors."""
+        long_student = User.objects.create_user(
+            username='longname1', password='x',
+            name='Hubert Blaine Wolfeschlegelsteinhausenbergerdorff Jr.',
+            enrollment_no='EN2026-POLY-999999999',
+            department='Interdisciplinary School of Advanced Computational Systems Engineering',
+            branch='CE', email='hubert.blaine@university.edu', user_type='student'
+        )
+        long_exam = Exam.objects.create(
+            title='End-Semester Comprehensive Examination in Advanced Heterogeneous Cloud Computing and Microservices',
+            subject='Distributed Systems Engineering', phase='T4', created_by=self.faculty,
+            start_time=timezone.now() - timezone.timedelta(hours=2),
+            end_time=timezone.now() - timezone.timedelta(hours=1),
+            duration_minutes=120, passing_marks=40.0, total_marks=100.0,
+            results_published=True, results_published_at=timezone.now()
+        )
+        session = StudentExamSession.objects.create(
+            exam=long_exam, student=long_student, status='evaluated',
+            mcq_score=35.0, coding_score=50.0, total_score=85.0, is_passed=True,
+            submitted_at=timezone.now(), faculty_verified=True, faculty_verified_at=timezone.now()
+        )
+        self.client.credentials()
+        self.client.force_authenticate(user=long_student)
+        res = self.client.get(f'/api/exams/{long_exam.id}/result-card.pdf')
+        self.assertEqual(res.status_code, 200)
+
+    def test_result_pdf_graceful_missing_optional_fields(self):
+        """Verifies that blank optional fields (department, branch, subject, phase, email) generate without errors."""
+        minimal_student = User.objects.create_user(username='minstu', password='x', name='Min Student', user_type='student')
+        minimal_exam = Exam.objects.create(
+            title='Basic Diagnostic', created_by=self.faculty,
+            start_time=timezone.now() - timezone.timedelta(hours=2),
+            end_time=timezone.now() - timezone.timedelta(hours=1),
+            duration_minutes=60, passing_marks=40.0, total_marks=100.0,
+            results_published=True
+        )
+        session = StudentExamSession.objects.create(
+            exam=minimal_exam, student=minimal_student, status='evaluated',
+            mcq_score=70.0, coding_score=0.0, total_score=70.0, is_passed=True,
+            submitted_at=timezone.now()
+        )
+        self.client.credentials()
+        self.client.force_authenticate(user=minimal_student)
+        res = self.client.get(f'/api/exams/{minimal_exam.id}/result-card.pdf')
+        self.assertEqual(res.status_code, 200)
+
+    def test_result_pdf_no_sensitive_information_leakage(self):
+        """Verifies that student source code, proctoring events, and internal secrets are not leaked in PDF."""
+        code_p = CodingProblem.objects.create(exam=self.exam, title='Confidential Problem', marks=40.0, language='python')
+        session = self._seed_released_session(total_score=88)
+        
+        # Add submission and proctor event
+        secret_code = "def SECRET_SUBMISSION_FUNCTION_12345(): return 'SUPER_SECRET_ALGORITHM'"
+        CodingSubmission.objects.create(
+            session=session, problem=code_p, submitted_code=secret_code,
+            logic_status='correct', marks_awarded=40.0
+        )
+        ProctorEvent.objects.create(
+            session=session, event_type='tab_switch', severity='high',
+            details='ip=192.168.1.100 recording_url=https://secret.s3.bucket/video.mp4'
+        )
+        
+        self.login_student()
+        res = self.client.get(f'/api/exams/{self.exam.id}/result-card.pdf')
+        self.assertEqual(res.status_code, 200)
+
+        reader = self._get_pdf_reader(res)
+        text = reader.pages[0].extract_text()
+        self.assertNotIn('SECRET_SUBMISSION_FUNCTION', text)
+        self.assertNotIn('SUPER_SECRET_ALGORITHM', text)
+        self.assertNotIn('192.168.1.100', text)
+        self.assertNotIn('https://secret.s3.bucket', text)
+        self.assertNotIn('tab_switch', text)
+
     # -- calendar export -------------------------------------------------
     def test_calendar_export_requires_exam_access(self):
         """A student with no StudentExamAccess grant for this exam should
@@ -2098,6 +2316,99 @@ class ProductOperationsTests(BaseSetup):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['flagged_pairs'], [])
 
+    def test_code_similarity_prunes_impossible_length_pairs(self):
+        """Mathematical pruning skips pairs whose upper-bound ratio cannot reach threshold."""
+        session_a = StudentExamSession.objects.create(exam=self.exam, student=self.student, status='submitted')
+        session_b = StudentExamSession.objects.create(exam=self.exam, student=self.student2, status='submitted')
+        # Very short submission (2 tokens) vs long submission (100 tokens)
+        CodingSubmission.objects.create(session=session_a, problem=self.problem, language='python', submitted_code="x = 1\n")
+        long_code = "\n".join([f"var_{i} = {i}" for i in range(50)])
+        CodingSubmission.objects.create(session=session_b, problem=self.problem, language='python', submitted_code=long_code)
+
+        self.login_faculty()
+        res = self.client.get(f'/api/exams/{self.exam.id}/coding-problems/{self.problem.id}/similarity/?threshold=0.70')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['compared_submissions'], 2)
+        self.assertEqual(res.data['flagged_pairs'], [])
+
+        # With threshold=0.0, the pair is not pruned and is evaluated
+        res_zero = self.client.get(f'/api/exams/{self.exam.id}/coding-problems/{self.problem.id}/similarity/?threshold=0.0')
+        self.assertEqual(res_zero.status_code, 200)
+        self.assertEqual(len(res_zero.data['flagged_pairs']), 1)
+
+    def test_code_similarity_c_style_comments_ignored_for_cpp_java_js(self):
+        """Comments in C++, Java, and JS must be stripped so comment edits don't change similarity."""
+        session_a = StudentExamSession.objects.create(exam=self.exam, student=self.student, status='submitted')
+        session_b = StudentExamSession.objects.create(exam=self.exam, student=self.student2, status='submitted')
+        code_a = (
+            "// Solution by Student A\n"
+            "/* Multi-line algorithm description\n"
+            "   Time complexity: O(N) */\n"
+            "#include <iostream>\n"
+            "int main() {\n"
+            "    int a = 10; // set a\n"
+            "    std::cout << a;\n"
+            "    return 0;\n"
+            "}\n"
+        )
+        code_b = (
+            "#include <iostream>\n"
+            "int main() {\n"
+            "    int a = 10;\n"
+            "    std::cout << a;\n"
+            "    return 0;\n"
+            "}\n"
+        )
+        CodingSubmission.objects.create(session=session_a, problem=self.problem, language='cpp', submitted_code=code_a)
+        CodingSubmission.objects.create(session=session_b, problem=self.problem, language='cpp', submitted_code=code_b)
+
+        self.login_faculty()
+        res = self.client.get(f'/api/exams/{self.exam.id}/coding-problems/{self.problem.id}/similarity/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data['flagged_pairs']), 1)
+        self.assertGreaterEqual(res.data['flagged_pairs'][0]['similarity'], 0.95)
+
+    def test_code_similarity_c_style_strings_and_urls_preserved(self):
+        """String literals containing comment-like markers or URLs must not be stripped."""
+        from .evaluator import _normalize_tokens
+        js_code = 'const endpoint = "http://example.com//api/v1"; const msg = "/* not a comment */";'
+        tokens = _normalize_tokens(js_code, 'javascript')
+        self.assertEqual(tokens, ['const', 'ID', '=', 'STR', ';', 'const', 'ID', '=', 'STR', ';'])
+
+    def test_code_similarity_audit_log_created_on_success(self):
+        """Authorized faculty execution writes a code_similarity_checked audit record."""
+        session_a = StudentExamSession.objects.create(exam=self.exam, student=self.student, status='submitted')
+        CodingSubmission.objects.create(session=session_a, problem=self.problem, language='python', submitted_code="def f(x):\n    return x\n")
+
+        from .models import AuditLog
+        initial_count = AuditLog.objects.filter(action='code_similarity_checked').count()
+
+        self.login_faculty()
+        res = self.client.get(f'/api/exams/{self.exam.id}/coding-problems/{self.problem.id}/similarity/?threshold=0.75')
+        self.assertEqual(res.status_code, 200)
+
+        logs = AuditLog.objects.filter(action='code_similarity_checked')
+        self.assertEqual(logs.count(), initial_count + 1)
+        latest = logs.latest('created_at')
+        self.assertEqual(latest.actor, self.faculty)
+        self.assertEqual(latest.target_type, 'CodingProblem')
+        self.assertEqual(latest.target_id, str(self.problem.id))
+        self.assertEqual(latest.details['exam_id'], self.exam.id)
+        self.assertEqual(latest.details['threshold'], 0.75)
+        self.assertEqual(latest.details['compared_submissions'], 1)
+
+    def test_code_similarity_audit_log_not_created_on_denied_student(self):
+        """Denied requests (e.g. from student) do not record a code_similarity_checked audit log."""
+        from .models import AuditLog
+        initial_count = AuditLog.objects.filter(action='code_similarity_checked').count()
+
+        self.login_student()
+        res = self.client.get(f'/api/exams/{self.exam.id}/coding-problems/{self.problem.id}/similarity/')
+        self.assertEqual(res.status_code, 403)
+
+        logs = AuditLog.objects.filter(action='code_similarity_checked')
+        self.assertEqual(logs.count(), initial_count)
+
     # -- login throttling scoped per account, not per IP -------------------
     def test_login_throttle_is_scoped_per_account_not_per_ip(self):
         """Regression: a plain IP-keyed login throttle would let one
@@ -2116,6 +2427,22 @@ class ProductOperationsTests(BaseSetup):
 class PracticeModeTests(BaseSetup):
     """Coverage for the self-serve mock test: no camera/mic, no proctoring,
     nothing persisted, faculty-invisible."""
+
+    def setUp(self):
+        super().setUp()
+        topics = ['Python', 'Python', 'Python', 'Python', 'Python', 'Python', 'Algorithms', 'Algorithms']
+        for i, topic in enumerate(topics, 1):
+            PracticeQuestion.objects.create(
+                topic=topic,
+                question_text=f'Practice question {i} in {topic}',
+                option_a='Option A',
+                option_b='Option B',
+                option_c='Option C',
+                option_d='Option D',
+                correct_option='A',
+                explanation=f'Explanation for question {i}',
+                is_active=True,
+            )
 
     def test_practice_questions_requires_student(self):
         self.login_faculty()

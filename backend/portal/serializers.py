@@ -182,6 +182,9 @@ class CodingSubmissionSerializer(serializers.ModelSerializer):
     max_marks = serializers.SerializerMethodField()
     problem_title = serializers.CharField(source='problem.title', read_only=True)
     problem_statement = serializers.CharField(source='problem.problem_statement', read_only=True)
+    reference_solutions = serializers.SerializerMethodField()
+    reference_unlock_available = serializers.SerializerMethodField()
+    reference_unlock_at = serializers.SerializerMethodField()
 
     class Meta:
         model = CodingSubmission
@@ -193,6 +196,7 @@ class CodingSubmissionSerializer(serializers.ModelSerializer):
             'test_passed_count', 'test_total_count', 'hidden_failed_count',
             'failed_visible_tests', 'ai_detected_approach', 'ai_logic_summary',
             'ai_mistake_explanation', 'ai_corrected_code', 'ai_predicted_output', 'ai_debug_source',
+            'reference_solutions', 'reference_unlock_available', 'reference_unlock_at',
         ]
 
     def get_max_marks(self, obj):

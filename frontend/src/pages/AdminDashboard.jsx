@@ -345,8 +345,9 @@ export default function AdminDashboard({ section = 'overview' }) {
           <span className="tool-icon tool-icon--rose"><ShieldAlert /></span>
           <div><h2>Audit log</h2><p>Every security- and marks-sensitive action, admin-only. Routine login/password-reset noise is filtered out.</p></div>
         </div>
-        <div className="tool-form tool-form--stack" style={{ gridTemplateColumns: '1fr auto', display: 'grid' }}>
+        <div className="my-4 flex flex-wrap gap-2">
           <input
+            className="tool-select my-0 flex-1 min-w-[200px]"
             value={auditActionFilter}
             onChange={(e) => setAuditActionFilter(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') loadAuditLogs(1); }}
@@ -371,9 +372,9 @@ export default function AdminDashboard({ section = 'overview' }) {
             ))}
           </div>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+        <div className="mt-4 flex flex-wrap items-center justify-end gap-2.5">
           <button type="button" className="button button-secondary" disabled={!auditPage.has_previous} onClick={() => loadAuditLogs(auditPage.page - 1)}><ChevronLeft size={16} /> Prev</button>
-          <small className="tool-empty" style={{ margin: 0 }}>Page {auditPage.page} of {auditPage.page_count}</small>
+          <small className="text-xs font-bold text-slate-500" style={{ margin: 0 }}>Page {auditPage.page} of {auditPage.page_count}</small>
           <button type="button" className="button button-secondary" disabled={!auditPage.has_next} onClick={() => loadAuditLogs(auditPage.page + 1)}>Next <ChevronRight size={16} /></button>
         </div>
       </article>

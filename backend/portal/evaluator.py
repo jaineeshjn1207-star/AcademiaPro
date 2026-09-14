@@ -88,12 +88,42 @@ GENERIC_KEYWORDS = PY_KEYWORDS | {
 }
 
 
+def _strip_c_style_comments(code):
+    """
+    Strips single-line (// ...) and multi-line (/* ... */) comments for C++, Java, and JavaScript,
+    while safely preserving string literals ("...", '...', `...`) and escaped quotes.
+    """
+    pattern = r'("(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`)|(//[^\r\n]*|/\*[\s\S]*?\*/)'
+
+    def replacer(match):
+        if match.group(1) is not None:
+            return match.group(1)
+        return ' '
+
+    return re.sub(pattern, replacer, code)
+
+
+def _strip_python_comments(code):
+    """
+    Strips Python comments (# ...) outside string literals.
+    """
+    pattern = r'("(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\')|(#.*)'
+
+    def replacer(match):
+        if match.group(1) is not None:
+            return match.group(1)
+        return ' '
+
+    return re.sub(pattern, replacer, code)
+
+
 def _normalize_tokens(code, language='python'):
     """
     Turn source into a canonical token stream where identifiers become 'ID'
     and numbers become 'NUM', so that variable naming does not affect
     similarity, but structure does.
     """
+    code = code or ''
     tokens = []
     if language == 'python':
         try:
@@ -115,10 +145,14 @@ def _normalize_tokens(code, language='python'):
                     tokens.append(tstr)
             return tokens
         except Exception:
-            pass  # fall through to regex tokenizer
+            code = _strip_python_comments(code)
+    else:
+        code = _strip_c_style_comments(code)
 
-    for raw in re.findall(r"[A-Za-z_]\w*|\d+\.?\d*|[^\sA-Za-z0-9_]", code):
-        if raw.isdigit():
+    for raw in re.findall(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`|[A-Za-z_]\w*|\d+\.?\d*|[^\sA-Za-z0-9_]', code):
+        if raw.startswith(('"', "'", '`')):
+            tokens.append('STR')
+        elif raw.isdigit() or re.match(r'^\d+\.?\d*$', raw):
             tokens.append('NUM')
         elif re.match(r'^[A-Za-z_]\w*$', raw):
             tokens.append(raw if raw in GENERIC_KEYWORDS else 'ID')

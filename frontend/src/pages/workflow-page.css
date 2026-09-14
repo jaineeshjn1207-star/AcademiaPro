@@ -1,14 +1,245 @@
-.workflow-page { display: grid; gap: 20px; }.workflow-page > .bg-white.rounded-3xl, .workflow-page > .rounded-3xl.bg-white { border-color: var(--line) !important; border-radius: 20px !important; background: var(--surface) !important; box-shadow: none !important; }.workflow-page :is(.bg-white, .bg-slate-50) { background-color: var(--surface) !important; }.workflow-page :is(.border-slate-100, .border-slate-200, .border-slate-300) { border-color: var(--line) !important; }.workflow-page :is(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700) { color: var(--ink) !important; }.workflow-page :is(.text-slate-600, .text-slate-500) { color: var(--ink-soft) !important; }.workflow-page :is(input, textarea, select) { border-color: var(--line) !important; border-radius: 9px !important; color: var(--ink) !important; background: var(--surface-raised) !important; box-shadow: none !important; }.workflow-page :is(input, textarea, select):focus { border-color: var(--brand) !important; box-shadow: 0 0 0 3px var(--brand-soft) !important; }.workflow-page :is(button.bg-amber-600, button.bg-blue-600, a.bg-amber-600, a.bg-blue-600) { background: var(--brand) !important; }.workflow-page :is(button.bg-slate-900, a.bg-slate-900) { background: var(--ink-panel) !important; }.workflow-page .shadow, .workflow-page .shadow-md, .workflow-page .shadow-lg, .workflow-page .shadow-xl { box-shadow: 0 2px 0 rgba(20,22,65,.03) !important; }.workflow-page :is(.rounded-3xl, .rounded-2xl) { border-radius: 14px !important; }.workflow-page table thead { background: var(--canvas) !important; }.workflow-page table tbody tr:hover { background: var(--brand-soft) !important; }.workflow-page .bg-indigo-50, .workflow-page .bg-blue-50 { background: var(--mint-soft) !important; }.workflow-page .bg-amber-50 { background: var(--sun-soft) !important; }.workflow-page .bg-rose-50 { background: var(--danger-soft) !important; }.manage-exam-page > :first-child, .create-exam-page > :first-child { border-top: 5px solid var(--brand) !important; }.create-exam-page > :first-child { padding: 7px 0 18px; border-bottom: 1px solid var(--line); }.result-review-page > :first-child { border-top: 5px solid var(--mint) !important; }.student-analysis-page > header { border: 1px solid var(--line); border-top: 5px solid var(--brand); border-radius: 20px; background: var(--surface) !important; box-shadow: none; }.student-analysis-page > header :is(.text-white, .text-slate-300) { color: var(--ink) !important; }
-.workflow-bank-picker { display: grid; gap: 6px; padding: 12px 14px; border: 1px dashed var(--brand); border-radius: 12px; background: var(--brand-soft); }
-.workflow-bank-picker label { color: var(--ink); font-size: 12px; font-weight: 800; }
-.workflow-bank-picker select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface-raised); font-size: 13px; font-weight: 650; }
-.workflow-bulk-import { display: grid; gap: 9px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 12px; background: var(--canvas); }
-.workflow-bulk-import__head { display: flex; align-items: center; justify-content: space-between; }
-.workflow-bulk-import__head > span { color: var(--ink); font-size: 12px; font-weight: 800; }
-.workflow-bulk-import__head > button { border: 0; background: transparent; color: var(--brand-deep); font-size: 11.5px; font-weight: 750; text-decoration: underline; cursor: pointer; }
-.workflow-bulk-import__controls { display: flex; align-items: center; gap: 8px; }
-.workflow-bulk-import__controls input[type="file"] { flex: 1; min-width: 0; font-size: 12px; color: var(--ink-soft); }
-.workflow-bulk-import__controls .app-button--quiet { min-height: 36px; padding: 0 14px; font-size: 12.5px; }
-.workflow-bulk-import__result { margin: 0; color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
+.workflow-page {
+  display: grid;
+  gap: 24px;
+}
+
+.workflow-page > .bg-white.rounded-3xl,
+.workflow-page > .rounded-3xl.bg-white,
+.workflow-page .workflow-card {
+  border: 1px solid var(--line) !important;
+  border-radius: 20px !important;
+  background: var(--surface) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.workflow-page :is(.bg-white, .bg-slate-50) {
+  background-color: var(--surface) !important;
+}
+
+.workflow-page :is(.border-slate-100, .border-slate-200, .border-slate-300) {
+  border-color: var(--line) !important;
+}
+
+.workflow-page :is(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700) {
+  color: var(--ink) !important;
+}
+
+.workflow-page :is(.text-slate-600, .text-slate-500) {
+  color: var(--ink-soft) !important;
+}
+
+.workflow-page :is(input, textarea, select) {
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  color: var(--ink) !important;
+  background: var(--surface-raised) !important;
+  box-shadow: none !important;
+  font-size: 14px;
+}
+
+.workflow-page select option {
+  background-color: var(--surface-raised);
+  color: var(--ink);
+}
+
+.workflow-page :is(input, textarea, select):focus {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px var(--brand-soft) !important;
+  outline: none;
+}
+
+.workflow-page :is(button.bg-amber-600, button.bg-blue-600, a.bg-amber-600, a.bg-blue-600) {
+  background: var(--brand) !important;
+  color: #fff !important;
+}
+
+.workflow-page :is(button.bg-slate-900, a.bg-slate-900) {
+  background: var(--ink-panel) !important;
+  color: #fff !important;
+}
+
+.workflow-page .shadow,
+.workflow-page .shadow-md,
+.workflow-page .shadow-lg,
+.workflow-page .shadow-xl {
+  box-shadow: 0 2px 8px rgba(20, 22, 65, 0.04) !important;
+}
+
+.workflow-page :is(.rounded-3xl, .rounded-2xl) {
+  border-radius: 16px !important;
+}
+
+.workflow-page table thead {
+  background: var(--canvas) !important;
+  color: var(--ink-faint) !important;
+}
+
+.workflow-page table tbody tr {
+  transition: background-color 0.14s ease;
+}
+
+.workflow-page table tbody tr:hover {
+  background: var(--brand-soft) !important;
+}
+
+.workflow-page .bg-indigo-50,
+.workflow-page .bg-blue-50 {
+  background: var(--brand-soft) !important;
+}
+
+.workflow-page .bg-amber-50,
+.workflow-page .bg-amber-50\/50 {
+  background: var(--sun-soft) !important;
+}
+
+.workflow-page .bg-rose-50,
+.workflow-page .bg-rose-50\/50 {
+  background: var(--danger-soft) !important;
+}
+
+.workflow-page .bg-emerald-50,
+.workflow-page .bg-emerald-50\/50 {
+  background: var(--mint-soft) !important;
+}
+
+.manage-exam-page > :first-child,
+.create-exam-page > :first-child {
+  border-top: 5px solid var(--brand) !important;
+}
+
+.create-exam-page > :first-child {
+  padding: 8px 0 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.result-review-page > :first-child {
+  border-top: 5px solid var(--mint) !important;
+}
+
+.student-analysis-page > header {
+  border: 1px solid var(--line);
+  border-top: 5px solid var(--brand);
+  border-radius: 20px;
+  background: var(--surface) !important;
+  box-shadow: none;
+}
+
+.student-analysis-page > header :is(.text-white, .text-slate-300) {
+  color: var(--ink) !important;
+}
+
+/* Question Bank Pickers */
+.workflow-bank-picker {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px dashed var(--brand);
+  border-radius: 12px;
+  background: var(--brand-soft);
+}
+
+.workflow-bank-picker label {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.workflow-bank-picker select {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface-raised);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+/* Bulk Import */
+.workflow-bulk-import {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--canvas);
+}
+
+.workflow-bulk-import__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.workflow-bulk-import__head > span {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.workflow-bulk-import__head > button {
+  border: 0;
+  background: transparent;
+  color: var(--brand-deep);
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.workflow-bulk-import__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workflow-bulk-import__controls input[type="file"] {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.workflow-bulk-import__controls .app-button--quiet {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 12.5px;
+}
+
+.workflow-bulk-import__result {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Tab Selector Safe Horizontal Scrolling */
+.manage-exam-page .flex.items-center.space-x-2.bg-slate-100 {
+  background: var(--canvas) !important;
+  border: 1px solid var(--line);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex-wrap: nowrap;
+}
+
+.manage-exam-page .flex.items-center.space-x-2.bg-slate-100::-webkit-scrollbar {
+  display: none;
+}
+
+.manage-exam-page .flex.items-center.space-x-2.bg-slate-100 button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .workflow-page {
+    gap: 16px;
+  }
+  .workflow-bulk-import__controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
 
 

@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ToastProvider';
 import './workflow-page.css';
-import { PlusCircle, Trash2, Code, HelpCircle, Key, ArrowLeft, ShieldCheck, Lock, AlertTriangle, Loader2, Radio, Ban, BarChart3 } from 'lucide-react';
+import { PlusCircle, Trash2, Code, HelpCircle, Key, ArrowLeft, ShieldCheck, Lock, AlertTriangle, Loader2, Radio, Ban, BarChart3, GitCompareArrows } from 'lucide-react';
 
 const tabFromPath = (pathname) => {
   if (/\/otps\/?$/.test(pathname)) return 'otps';
@@ -66,6 +66,11 @@ export default function ManageExam() {
   const [rosterCanManage, setRosterCanManage] = useState(true);
   const [resultPublishing, setResultPublishing] = useState(false);
   const [verifyingStudentId, setVerifyingStudentId] = useState(null);
+
+  // Code Similarity state
+  const [similarityProblemId, setSimilarityProblemId] = useState('');
+  const [similarityData, setSimilarityData] = useState(null);
+  const [similarityLoading, setSimilarityLoading] = useState(false);
 
   const LANGUAGE_LABELS = { python: 'Python 3', javascript: 'JavaScript (Node.js)', cpp: 'C++', java: 'Java' };
   const languageAliases = { python: 'python', 'python 3': 'python', javascript: 'javascript', 'node.js': 'javascript', nodejs: 'javascript', 'c++': 'cpp', cpp: 'cpp', java: 'java' };
@@ -133,6 +138,32 @@ export default function ManageExam() {
     if (activeTab === 'roster') loadRoster();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, examId]);
+
+  const checkSimilarity = async (probId) => {
+    if (!probId) {
+      setSimilarityProblemId('');
+      setSimilarityData(null);
+      return;
+    }
+    setSimilarityProblemId(probId);
+    setSimilarityLoading(true);
+    try {
+      const res = await api.get(`exams/${examId}/coding-problems/${probId}/similarity/`);
+      setSimilarityData(res.data);
+    } catch (err) {
+      toast({ type: 'error', title: 'Error computing code similarity', message: err.response?.data?.error || 'Failed to check similarity' });
+      setSimilarityData(null);
+    } finally {
+      setSimilarityLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'similarity' && !similarityProblemId && codingProblems.length > 0) {
+      checkSimilarity(codingProblems[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, codingProblems]);
 
   const handleVerifyFromRoster = async (studentId) => {
     if (verifyingStudentId) return;
@@ -492,6 +523,15 @@ export default function ManageExam() {
           >
             <Radio className="w-4 h-4" />
             <span>Live Status{rosterCounts ? ` (${rosterCounts.in_progress + rosterCounts.submitted + rosterCounts.ufm}/${roster.length})` : ''}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('similarity')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-1.5 ${
+              activeTab === 'similarity' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <GitCompareArrows className="w-4 h-4" />
+            <span>Code Similarity</span>
           </button>
         </div>
       </div>
@@ -1171,7 +1211,7 @@ export default function ManageExam() {
       )}
 
       {/* ---------------- Code Similarity ---------------- */}
-      {false && activeTab === 'similarity' && (
+      {activeTab === 'similarity' && (
         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-5">
             <div>

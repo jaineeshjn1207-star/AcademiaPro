@@ -1,3 +1,223 @@
-.feedback-toasts { position: fixed; z-index: 1000; top: 18px; right: 18px; display: flex; width: min(360px, calc(100vw - 36px)); flex-direction: column; gap: 10px; pointer-events: none; }.feedback-toast { pointer-events: auto; border: 1px solid var(--line); border-left: 4px solid var(--mint); border-radius: 12px; color: var(--ink); background: var(--surface-raised); box-shadow: var(--shadow); animation: toast-in .2s ease-out; }.feedback-toast.is-error { border-left-color: var(--danger); }.feedback-toast.is-warning { border-left-color: var(--sun); }.feedback-toast.is-info { border-left-color: var(--brand); }.feedback-toast-inner { display: flex; align-items: flex-start; gap: 10px; padding: 13px; }.feedback-toast-icon { width: 18px; height: 18px; flex: 0 0 auto; color: var(--mint); }.is-error .feedback-toast-icon { color: var(--danger); }.is-warning .feedback-toast-icon { color: var(--sun); }.is-info .feedback-toast-icon { color: var(--brand); }.feedback-toast-copy { min-width: 0; flex: 1; }.feedback-toast-copy > div { font-size: 12px; font-weight: 800; }.feedback-toast-copy p { margin: 3px 0 0; color: var(--ink-soft); font-size: 11px; line-height: 1.5; }.feedback-dismiss { display: grid; width: 24px; height: 24px; place-items: center; border: 0; border-radius: 7px; color: var(--ink-faint); background: transparent; cursor: pointer; }.feedback-dismiss:hover { color: var(--ink); background: var(--canvas); }.feedback-dialog-backdrop { position: fixed; z-index: 1001; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(13,18,17,.62); backdrop-filter: blur(4px); }.feedback-dialog { width: min(100%, 440px); padding: 24px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface-raised); box-shadow: 0 26px 52px rgba(20, 22, 65, .28); animation: dialog-in .2s ease-out; }.feedback-dialog-main { display: flex; align-items: flex-start; gap: 13px; }.feedback-dialog-icon { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border-radius: 11px; color: var(--brand-deep); background: var(--brand-soft); }.feedback-dialog-icon.is-danger { color: var(--danger); background: var(--danger-soft); }.feedback-dialog-copy h2 { margin: 1px 0 4px; color: var(--ink); font-size: 17px; letter-spacing: -.03em; }.feedback-dialog-copy p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.55; }.feedback-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 23px; }.feedback-dialog-actions button { min-height: 38px; padding: 8px 12px; border-radius: 9px; cursor: pointer; font-size: 12px; font-weight: 800; }.feedback-dialog-cancel { border: 1px solid var(--line); color: var(--ink-soft); background: var(--surface); }.feedback-dialog-confirm { border: 1px solid var(--brand); color: #fff; background: var(--brand); }.feedback-dialog-confirm.is-danger { border-color: var(--danger); background: var(--danger); }@keyframes toast-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }@keyframes dialog-in { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.feedback-toasts {
+  position: fixed;
+  z-index: 1000;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  width: min(360px, calc(100vw - 36px));
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.feedback-toast {
+  pointer-events: auto;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--mint);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+  animation: toast-in 0.2s ease-out;
+}
+
+.feedback-toast.is-error {
+  border-left-color: var(--danger);
+}
+
+.feedback-toast.is-warning {
+  border-left-color: var(--sun);
+}
+
+.feedback-toast.is-info {
+  border-left-color: var(--brand);
+}
+
+.feedback-toast-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+}
+
+.feedback-toast-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--mint);
+}
+
+.is-error .feedback-toast-icon {
+  color: var(--danger);
+}
+
+.is-warning .feedback-toast-icon {
+  color: var(--sun);
+}
+
+.is-info .feedback-toast-icon {
+  color: var(--brand);
+}
+
+.feedback-toast-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.feedback-toast-copy > div {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.feedback-toast-copy p {
+  margin: 3px 0 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.feedback-dismiss {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  color: var(--ink-faint);
+  background: transparent;
+  cursor: pointer;
+}
+
+.feedback-dismiss:hover {
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+.feedback-dialog-backdrop {
+  position: fixed;
+  z-index: 1001;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 11, 22, 0.65);
+  backdrop-filter: blur(4px);
+}
+
+.feedback-dialog {
+  width: min(100%, 440px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+  animation: dialog-in 0.2s ease-out;
+}
+
+.feedback-dialog-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.feedback-dialog-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.feedback-dialog-icon.is-danger {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.feedback-dialog-copy h2 {
+  margin: 1px 0 4px;
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.feedback-dialog-copy p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.feedback-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.feedback-dialog-actions button {
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.feedback-dialog-cancel {
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  background: var(--surface);
+}
+
+.feedback-dialog-cancel:hover {
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+.feedback-dialog-confirm {
+  border: 1px solid var(--brand);
+  color: #fff;
+  background: var(--brand);
+}
+
+.feedback-dialog-confirm:hover {
+  background: var(--brand-deep);
+}
+
+.feedback-dialog-confirm.is-danger {
+  border-color: var(--danger);
+  background: var(--danger);
+}
+
+.feedback-dialog-confirm.is-danger:hover {
+  background: color-mix(in srgb, var(--danger) 85%, #000);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 

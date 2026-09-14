@@ -55,8 +55,15 @@ export default function NotificationBell() {
     const onClick = (e) => {
       if (popRef.current && !popRef.current.contains(e.target)) setOpen(false);
     };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   const openPanel = async () => {
