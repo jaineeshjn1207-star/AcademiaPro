@@ -61,7 +61,11 @@ AcademiaPro follows a decoupled, cloud-ready architecture:
 | `DJANGO_EMAIL_PORT` | Optional | `587` | SMTP port. |
 | `DJANGO_EMAIL_HOST_USER` | Optional | `apikey` | SMTP username. |
 | `DJANGO_EMAIL_HOST_PASSWORD` | Optional | `your-smtp-password` | SMTP password / API token. |
-| `DJANGO_EMAIL_USE_TLS` | Optional | `True` | Enable TLS for SMTP connections. |
+| `R2_ACCOUNT_ID` | Optional / Prod | `a1b2c3d4e5f6...` | Cloudflare account ID for R2 storage. |
+| `R2_ACCESS_KEY_ID` | Optional / Prod | `987654321...` | Cloudflare R2 API token Access Key ID. |
+| `R2_SECRET_ACCESS_KEY` | Optional / Prod | `abcdef123456...` | Cloudflare R2 API token Secret Access Key. |
+| `R2_BUCKET_NAME` | Optional / Prod | `academiapro-media` | Cloudflare R2 bucket name for private uploads. |
+| `R2_URL_EXPIRY` | No | `3600` | Presigned URL expiration in seconds (default: 1 hour). |
 
 ### Frontend (`frontend/.env` or Static Hosting Environment)
 
@@ -72,31 +76,60 @@ AcademiaPro follows a decoupled, cloud-ready architecture:
 
 ---
 
-## 3. Deployment Option 1: PaaS (Render + Vercel)
+## 3. Deployment Option 1: PaaS (Render Docker Web Service + Vercel + Neon + R2)
 
-### Backend on Render (Web Service):
-1. Create a **New Web Service** connected to your GitHub repository.
+### Backend on Render (Docker Web Service):
+1. Create a **New Web Service** connected to your GitHub repository `AcademiaPro`.
 2. Set **Root Directory** to `backend`.
-3. Set **Runtime** to `Python 3`.
-4. Set **Build Command**:
-   ```bash
-   pip install -r requirements.txt && python manage.py collectstatic --noinput
-   ```
-5. Set **Start Command**:
-   ```bash
-   python manage.py migrate && gunicorn exam_portal.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --threads 2 --timeout 120
-   ```
-6. Add all required environment variables under the **Environment** tab.
+3. Set **Runtime / Environment** to **Docker**.
+4. Configure Build & Context:
+   - **Docker Context**: `backend`
+   - **Dockerfile Path**: `backend/Dockerfile`
+5. Configure Commands:
+   - **Pre-deploy Command**:
+     ```bash
+     python manage.py migrate --noinput
+     ```
+   - **Start Command**:
+     ```bash
+     gunicorn exam_portal.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 120
+     ```
+6. Add required environment variables under the **Environment** tab:
+   - `DATABASE_URL` (from Neon pooled connection)
+   - `DJANGO_SECRET_KEY`
+   - `DJANGO_DEBUG` = `False`
+   - `DJANGO_ALLOWED_HOSTS` = `<your-service-name>.onrender.com`
+   - `DJANGO_CSRF_TRUSTED_ORIGINS` = `https://<your-vercel-domain>.vercel.app,https://<your-service-name>.onrender.com`
+   - `CORS_ALLOWED_ORIGINS` = `https://<your-vercel-domain>.vercel.app`
+   - `FRONTEND_URL` = `https://<your-vercel-domain>.vercel.app`
+   - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`
 7. Set Health Check Path to `/healthz/`.
+
+### Cloudflare R2 Bucket Setup:
+1. In Cloudflare Dashboard, go to **R2 > Create Bucket**. Name: `academiapro-media`.
+2. Keep the bucket **Private** (do not enable public domain).
+3. Create an **API Token** with `Object Read & Write` permissions scoped to `academiapro-media`.
+4. Configure the **CORS Policy** on the bucket for browser video streaming / downloads:
+   ```json
+   [
+     {
+       "AllowedOrigins": ["https://<your-vercel-domain>.vercel.app", "http://localhost:5173"],
+       "AllowedMethods": ["GET", "HEAD"],
+       "AllowedHeaders": ["*"],
+       "ExposeHeaders": ["ETag", "Content-Length", "Content-Disposition", "Content-Range"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
 
 ### Frontend on Vercel:
 1. Create a **New Project** connected to the repository.
 2. Set **Root Directory** to `frontend`.
 3. Set **Framework Preset** to `Vite`.
-4. Add Environment Variable:
-   - `VITE_API_BASE_URL`: `https://<your-render-backend-url>/api/`
+4. Add Environment Variables:
+   - `VITE_API_BASE_URL`: `https://<your-render-backend-url>.onrender.com/api/`
    - `VITE_SHOW_DEMO_CREDENTIALS`: `false`
-5. Deploy. The included `vercel.json` automatically handles SPA routing.
+5. Deploy. The included `frontend/vercel.json` automatically handles SPA routing.
 
 ---
 

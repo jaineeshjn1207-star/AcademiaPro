@@ -5,8 +5,7 @@ FROM python:3.11-slim
 
 # Prevent Python from writing .pyc files and buffer stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
@@ -43,7 +42,7 @@ EXPOSE 8000
 
 # Health check against Django healthz endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/healthz/ || exit 1
+    CMD curl -f http://localhost:${PORT:-8000}/healthz/ || exit 1
 
 # Start Gunicorn WSGI server
-CMD ["sh", "-c", "gunicorn exam_portal.wsgi:application --bind 0.0.0.0:${PORT} --workers 3 --threads 2 --timeout 120"]
+CMD ["sh", "-c", "gunicorn exam_portal.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 2 --timeout 120"]

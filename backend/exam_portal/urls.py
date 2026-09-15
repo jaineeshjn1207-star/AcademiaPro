@@ -23,9 +23,10 @@ urlpatterns = [
 # every note download/upload link was 404ing with "resource not found" in
 # production — so this wires django.views.static.serve directly instead of
 # going through that helper.
-urlpatterns += [
-    re_path(r'^%s(?P<path>.*)$' % re.escape(settings.MEDIA_URL.lstrip('/')),
-            serve_static, {'document_root': settings.MEDIA_ROOT}),
-]
+if settings.MEDIA_URL.startswith('/'):
+    urlpatterns += [
+        re_path(r'^%s(?P<path>.*)$' % re.escape(settings.MEDIA_URL.lstrip('/')),
+                serve_static, {'document_root': settings.MEDIA_ROOT}),
+    ]
 
 
