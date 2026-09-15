@@ -147,11 +147,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # ------------------------------------------------------------------------------
-# FILE STORAGE (CLOUDFLARE R2 OBJECT STORAGE OR LOCAL FALLBACK)
+# FILE STORAGE (BACKBLAZE B2 / CLOUDFLARE R2 OBJECT STORAGE OR LOCAL FALLBACK)
 # ------------------------------------------------------------------------------
-R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME')
-R2_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID')
-R2_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY')
+R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME') or os.environ.get('B2_BUCKET_NAME')
+R2_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID') or os.environ.get('B2_KEY_ID')
+R2_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY') or os.environ.get('B2_APPLICATION_KEY')
 R2_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID')
 
 if R2_BUCKET_NAME and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY:
@@ -168,9 +168,10 @@ if R2_BUCKET_NAME and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY:
     AWS_STORAGE_BUCKET_NAME = R2_BUCKET_NAME
     AWS_S3_ENDPOINT_URL = (
         os.environ.get('R2_ENDPOINT_URL')
-        or f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+        or os.environ.get('B2_ENDPOINT_URL')
+        or (f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com" if R2_ACCOUNT_ID else "https://s3.eu-central-003.backblazeb2.com")
     )
-    AWS_S3_REGION_NAME = 'auto'
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME') or 'eu-central-003'
     AWS_S3_SIGNATURE_VERSION = 's3v4'
     AWS_DEFAULT_ACL = None  # Bucket remains private
     AWS_QUERYSTRING_AUTH = True  # Generate signed presigned URLs for secure access
