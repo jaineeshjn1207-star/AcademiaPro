@@ -44,5 +44,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/healthz/ || exit 1
 
-# Start Gunicorn WSGI server
-CMD ["sh", "-c", "gunicorn exam_portal.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 2 --timeout 120"]
+# Run database migrations then start Gunicorn WSGI server as PID 1
+CMD ["/bin/sh", "-c", "python manage.py migrate --noinput && exec gunicorn exam_portal.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 2 --timeout 120"]
