@@ -3,9 +3,13 @@
 # ==============================================================================
 FROM python:3.11-slim
 
-# Prevent Python from writing .pyc files and buffer stdout/stderr
+# Prevent Python from writing .pyc files, buffer stdout/stderr, and set isolated non-root cache paths
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    HOME=/home/appuser \
+    MPLCONFIGDIR=/tmp/matplotlib \
+    XDG_CACHE_HOME=/tmp/cache \
+    XDG_CONFIG_HOME=/home/appuser/.config
 
 WORKDIR /app
 
@@ -29,10 +33,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application source code
 COPY . /app/
 
-# Create media and static directories, and configure non-root user
-RUN mkdir -p /app/staticfiles /app/media && \
-    groupadd -r appuser && useradd -r -g appuser -u 1001 appuser && \
-    chown -R appuser:appuser /app
+# Create home, cache, media, static directories, and configure non-root user
+RUN groupadd -r appuser && useradd -r -m -d /home/appuser -g appuser -u 1001 appuser && \
+    mkdir -p /home/appuser/.cache /home/appuser/.config /tmp/matplotlib /tmp/cache /app/staticfiles /app/media && \
+    chmod 700 /tmp/matplotlib /tmp/cache && \
+    chown -R appuser:appuser /home/appuser /app /tmp/matplotlib /tmp/cache
 
 # Switch to non-root user for safe execution
 USER appuser
